@@ -1,0 +1,17 @@
+[
+  {
+    "id": "kb001",
+    "title": "How to restart Elasticsearch",
+    "content": "To restart Elasticsearch, use systemctl restart elasticsearch."
+  },
+  {
+    "id": "kb002",
+    "title": "Diagnosing slow queries",
+    "content": "Use the slow logs in Elasticsearch to identify slow queries."
+  },
+  {
+    "id": "kb003",
+    "title": "Setting up APM Server",
+    "content": "Install and configure APM Server to collect traces from your application."
+  }
+]
