@@ -1,0 +1,38 @@
+# Kopiere diese Datei nach config.yaml und passe an.
+
+paths:
+  books_dir: "./books"
+  data_dir: "./data"
+  ocr_out_dir: "./data/ocr_out"
+
+qdrant:
+  url: "http://localhost:6333"
+  collection: "books_chunks"
+
+embedding:
+  model_name_or_path: "sentence-transformers/all-MiniLM-L6-v2"
+  device: "cpu"   # "cuda" falls vorhanden
+
+retrieval:
+  top_k: 8
+  min_score: 0.20
+  max_passages: 5
+
+chunking:
+  max_chars: 2500
+  overlap_chars: 200
+
+llm:
+  backend: "llama_cpp"   # "llama_cpp" oder "ollama"
+  model_path: "./models/your-model.gguf"
+  n_ctx: 4096
+  temperature: 0.1
+  max_tokens: 512
+
+  # ollama (optional):
+  # url: "http://localhost:11434"
+  # model: "llama3.1:8b"
+
+ui:
+  host: "127.0.0.1"
+  port: 7860
