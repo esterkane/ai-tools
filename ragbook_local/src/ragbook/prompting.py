@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 
-def build_grounded_prompt(question: str, passages: list[dict]) -> str:
+def build_grounded_prompt(question: str, passages: list[dict], language: str = "en") -> str:
+    """Build a localized grounded prompt. If `language` starts with 'de' a German prompt will be returned."""
     ctx = []
     for i, p in enumerate(passages, start=1):
         payload = p["payload"]
@@ -11,6 +12,21 @@ def build_grounded_prompt(question: str, passages: list[dict]) -> str:
         )
 
     context_block = "\n\n".join(ctx)
+
+    if (language or "").lower().startswith("de"):
+        return (
+            "Du bist ein präziser Assistent für technische Lehrbücher (Maschinenbau).\n"
+            "Regeln (sehr wichtig):\n"
+            "- Antworte *nur* basierend auf den nachfolgenden PASSAGEN.\n"
+            "- Wenn die PASSAGEN nicht ausreichen, antworte: \"Nicht genug Information in den Büchern.\" und schlage 3-5 konkrete Folgefragen vor.\n"
+            "- Erfinde nichts. Keine Annahmen, keine externen Fakten.\n\n"
+            f"Frage:\n{question}\n\n"
+            f"PASSAGEN:\n{context_block}\n\n"
+            "Ausgabeformat:\n"
+            "1) Antwort (kurz, sachlich)\n"
+            "2) Belege: Liste der verwendeten chunk_id (mit kurzer Notiz: welche Behauptung wo gestützt wird)\n"
+            "3) Fehlende Infos / Folgefragen (falls vorhanden)\n"
+        )
 
     return (
         "You are a precise assistant for technical textbooks (mechanical engineering).\n"
@@ -27,10 +43,11 @@ def build_grounded_prompt(question: str, passages: list[dict]) -> str:
     )
 
 
-def build_claim_check_prompt(answer: str, passages: list[dict]) -> str:
+def build_claim_check_prompt(answer: str, passages: list[dict], language: str = "en") -> str:
     """Build a prompt asking the LLM to mark sentences in `answer` that are NOT directly
     supported by the provided passages. The LLM must return a JSON array of unsupported
     sentences only (e.g. ["sentence 1.", "sentence 2."]). If none, return an empty JSON array `[]`.
+    The prompt is localized based on `language` (supports German when language startswith 'de').
     """
     ctx = []
     for i, p in enumerate(passages, start=1):
@@ -38,6 +55,17 @@ def build_claim_check_prompt(answer: str, passages: list[dict]) -> str:
         ctx.append(f"[PASSAGE {i}] page={payload.get('page')} chunk_id={payload.get('chunk_id')}\n{payload.get('text')}\n")
 
     passages_block = "\n\n".join(ctx)
+
+    if (language or "").lower().startswith("de"):
+        return (
+            "Überprüfe, welche Sätze in der gegebenen ANTWORT NICHT direkt durch die PASSAGEN gestützt werden. "
+            "Gib AUSSCHLIEßLICH ein JSON-Array zurück (keinen zusätzlichen Text) mit den nicht unterstützten Sätzen (exakte Teilsätze aus der Antwort).\n\n"
+            "ANTWORT:\n"
+            f"{answer}\n\n"
+            "PASSAGEN:\n"
+            f"{passages_block}\n\n"
+            "Wenn alle Sätze gestützt sind, gib `[]` zurück."
+        )
 
     return (
         "Verify which sentences in the provided ANSWER are NOT directly supported by the PASSAGES. "

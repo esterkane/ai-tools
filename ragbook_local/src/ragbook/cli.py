@@ -18,9 +18,9 @@ app = typer.Typer(add_completion=False, help="ragbook_local CLI")
 
 @app.command()
 def ingest(
-    input_path: Path = typer.Argument(..., exists=True, help="Ordner mit PDFs oder einzelne PDF"),
-    config: Path = typer.Option(Path("./config.yaml"), help="Pfad zur config.yaml"),
-    ocr: bool = typer.Option(True, help="OCR anwenden, wenn PDF keine Textschicht hat"),
+    input_path: Path = typer.Argument(..., exists=True, help="Folder with PDFs or a single PDF"),
+    config: Path = typer.Option(Path("./config.yaml"), help="Path to config.yaml"),
+    ocr: bool = typer.Option(True, help="Apply OCR if a PDF has no text layer"),
 ):
     cfg = load_config(config)
 
@@ -30,7 +30,7 @@ def ingest(
         pdfs = sorted(input_path.rglob("*.pdf"))
 
     if not pdfs:
-        raise typer.BadParameter("Keine PDFs gefunden.")
+        raise typer.BadParameter("No PDFs found.")
 
     store = QdrantStore.connect(cfg.qdrant.url, cfg.qdrant.collection)
     embedder = Embedder.from_model(cfg.embedding.model_name_or_path, device=cfg.embedding.device)
@@ -44,13 +44,13 @@ def ingest(
         ocr_out_dir=cfg.paths.ocr_out_dir if ocr else None,
     )
 
-    typer.echo(f"Indexing fertig: docs={res.docs_indexed} chunks={res.chunks_indexed}")
+    typer.echo(f"Indexing complete: docs={res.docs_indexed} chunks={res.chunks_indexed}")
 
 
 @app.command()
 def ocr(
-    input_dir: Path = typer.Argument(..., exists=True, help="Ordner mit PDFs (Scan)"),
-    config: Path = typer.Option(Path("./config.yaml"), help="Pfad zur config.yaml"),
+    input_dir: Path = typer.Argument(..., exists=True, help="Folder with PDFs (scans)"),
+    config: Path = typer.Option(Path("./config.yaml"), help="Path to config.yaml"),
     dry_run: bool = typer.Option(False, help="Dry run: show which PDFs need OCR"),
 ):
     cfg = load_config(config)
@@ -67,7 +67,7 @@ def ocr(
 
 @app.command()
 def bm25_rebuild(
-    config: Path = typer.Option(Path("./config.yaml"), help="Pfad zur config.yaml"),
+    config: Path = typer.Option(Path("./config.yaml"), help="Path to config.yaml"),
     output: Path | None = typer.Option(None, help="Output path for BM25 pickle"),
     force: bool = typer.Option(False, help="Overwrite existing file if present"),
 ):
@@ -76,7 +76,7 @@ def bm25_rebuild(
     out = output or Path(cfg.retrieval.bm25_path)
 
     store = QdrantStore.connect(cfg.qdrant.url, cfg.qdrant.collection)
-    idx = BM25Index.from_store(store)
+    idx = BM25Index.from_store(store, language=cfg.retrieval.language)
 
     if out.exists() and not force:
         typer.echo(f"{out} already exists. Use --force to overwrite.")
@@ -118,6 +118,7 @@ def ui(
         rerank_model=cfg.rerank.model,
         rerank_candidates=cfg.rerank.candidates,
         claim_check_mode=cfg.retrieval.claim_check_mode,
+        language=cfg.retrieval.language,
     )
     launch_ui(engine, host=cfg.ui.host, port=cfg.ui.port)
 

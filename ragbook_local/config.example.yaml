@@ -1,4 +1,4 @@
-# Kopiere diese Datei nach config.yaml und passe an.
+# Copy this file to config.yaml and adjust paths.
 
 paths:
   books_dir: "./books"
@@ -10,13 +10,21 @@ qdrant:
   collection: "books_chunks"
 
 embedding:
-  model_name_or_path: "sentence-transformers/all-MiniLM-L6-v2"
-  device: "cpu"   # "cuda" falls vorhanden
+  # For German or multilingual corpora, we recommend a multilingual model (e.g. paraphrase-multilingual-MiniLM-L12-v2)
+  model_name_or_path: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+  device: "cpu"   # use "cuda" if available for faster embeddings
 
 retrieval:
   top_k: 8
   min_score: 0.20
   max_passages: 5
+  # language hint for retrieval and claim-check ("de" for German, "en" for English, "auto" to leave as-is)
+  language: "auto"
+  # Optional rerank config
+  # rerank:
+  #   enabled: false
+  #   model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+  #   candidates: 30
 
 chunking:
   max_chars: 2500
