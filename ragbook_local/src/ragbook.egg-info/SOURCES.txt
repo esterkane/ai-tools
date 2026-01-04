@@ -1,4 +1,3 @@
-LICENSE
 README.md
 pyproject.toml
 src/ragbook/__init__.py
@@ -22,6 +21,15 @@ src/ragbook/ingest/__init__.py
 src/ragbook/ingest/chunking.py
 src/ragbook/ingest/ocr.py
 src/ragbook/ingest/pdf_text.py
+tests/test_chat_engine_bm25_load.py
+tests/test_chat_engine_reranked_flag.py
 tests/test_chunking.py
+tests/test_chunking_context.py
+tests/test_claim_check.py
+tests/test_cli_bm25.py
+tests/test_cli_bm25_force.py
+tests/test_guardrails.py
+tests/test_integration_claim_check.py
+tests/test_ocr_pipeline.py
 tests/test_rerank_fallback.py
 tests/test_retrieval_hybrid.py
