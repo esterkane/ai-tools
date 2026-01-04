@@ -22,7 +22,7 @@ def _format_passages(passages: list[dict]) -> str:
         pre_md = f"**context before:** { _short(pre) }\n\n" if pre else ""
         post_md = f"\n\n**context after:** { _short(post) }" if post else ""
 
-        page_range = f"Seite {p.get('page_start')}" if p.get("page_start") == p.get("page_end") else f"Seiten {p.get('page_start')}-{p.get('page_end')}"
+        page_range = f"Page {p.get('page_start')}" if p.get("page_start") == p.get("page_end") else f"Pages {p.get('page_start')}-{p.get('page_end')}"
 
         lines.append(
             f"### Passage {i} — {p.get('doc_title')} ({page_range})\n"
@@ -32,22 +32,22 @@ def _format_passages(passages: list[dict]) -> str:
             f"**section:** {p.get('section') or '_n/a_'}\n\n"
             f"{pre_md}{p.get('text')}{post_md}\n"
         )
-    return "\n\n---\n\n".join(lines) if lines else "_Keine Passagen._"
+    return "\n\n---\n\n".join(lines) if lines else "_No passages._"
 
 
 def launch_ui(engine: ChatEngine, host: str = "127.0.0.1", port: int = 7860):
     with gr.Blocks(title="ragbook_local") as demo:
-        gr.Markdown("# ragbook_local — Lokales RAG (mit Belegen)")
+        gr.Markdown("# ragbook_local — Local RAG (with citations)")
 
-        q = gr.Textbox(label="Frage", placeholder="Stelle eine Frage zu deinen Büchern…", lines=3)
-        ask_btn = gr.Button("Antworten")
-        clear_btn = gr.Button("Leeren")
+        q = gr.Textbox(label="Question", placeholder="Ask a question about your books…", lines=3)
+        ask_btn = gr.Button("Answer")
+        clear_btn = gr.Button("Clear")
 
-        ans = gr.Markdown(label="Antwort")
-        reason = gr.Markdown(label="Entscheidung/Reason")
+        ans = gr.Markdown(label="Answer")
+        reason = gr.Markdown(label="Decision / Reason")
         meta = gr.Markdown(label="Meta")
-        probes = gr.Markdown(label="Rückfragen (wenn nötig)")
-        passages = gr.Markdown(label="Quellen-Passagen (vollständig)")
+        probes = gr.Markdown(label="Probing questions (if needed)")
+        passages = gr.Markdown(label="Source passages (full)")
 
         def _ask(question: str):
             if not question or not question.strip():
@@ -85,8 +85,8 @@ def launch_ui(engine: ChatEngine, host: str = "127.0.0.1", port: int = 7860):
         clear_btn.click(lambda: ("", "", "", "", ""), outputs=[q, ans, reason, meta, probes, passages])
 
         gr.Markdown(
-            "Hinweis: Das System antwortet nur, wenn die Evidenz ausreichend ist. "
-            "Sonst werden Rückfragen vorgeschlagen."
+            "Note: The system only responds when evidence is sufficient. "
+            "Otherwise probing questions are suggested."
         )
 
     demo.launch(server_name=host, server_port=port)

@@ -33,6 +33,8 @@ class ChatEngine:
     rerank_candidates: int = 30
     _reranker: object | None = None
     claim_check_mode: str = "refuse"
+    # language hint for prompts and BM25 tokenization (e.g., 'de' for German)
+    language: str = "en"
 
     def ask(self, question: str) -> dict:
         # ensure BM25 index exists (lazy build). Prefer persisted index if available.
@@ -48,7 +50,8 @@ class ChatEngine:
 
             if self.bm25_index is None:
                 try:
-                    self.bm25_index = BM25Index.from_store(self.store)
+                    # build from store and pass language hint
+                    self.bm25_index = BM25Index.from_store(self.store, language=self.language)
                 except Exception:
                     # if BM25 cannot be built, continue with vector-only behavior
                     self.bm25_index = None
@@ -120,8 +123,14 @@ class ChatEngine:
         # decision uses fused_score
         decision = decide_or_ask(question, fused_sorted, min_score=self.min_score)
         if not decision.should_answer:
+            # localized refusal message
+            if (self.language or "").lower().startswith("de"):
+                refusal = "Nicht genug Information in den Büchern."
+            else:
+                refusal = "Not enough information in the books."
+
             return {
-                "answer": "Nicht genug Information in den Büchern.",
+                "answer": refusal,
                 "reason": decision.reason,
                 "passages": fused_sorted[: self.max_passages],
                 "probing_questions": decision.probing_questions,
@@ -161,11 +170,11 @@ class ChatEngine:
                     warnings.warn("Reranker prediction failed; proceeding without reranking.")
 
         passages = fused_sorted[: self.max_passages]
-        prompt = build_grounded_prompt(question, passages)
+        prompt = build_grounded_prompt(question, passages, language=self.language)
         answer = self.llm.generate(prompt)
 
         # Claim-check step: ask LLM to mark unsupported sentences
-        claim_check_prompt = build_claim_check_prompt(answer, passages)
+        claim_check_prompt = build_claim_check_prompt(answer, passages, language=self.language)
         unsupported = []
         try:
             resp = self.llm.generate(claim_check_prompt)
@@ -183,8 +192,11 @@ class ChatEngine:
                 if not final_answer.strip():
                     final_answer = "Not enough information in the books."
             else:
-                # default/refuse behavior
-                final_answer = "Not enough information in the books."
+                # default/refuse behavior (localized)
+                if (self.language or "").lower().startswith("de"):
+                    final_answer = "Nicht genug Information in den Büchern."
+                else:
+                    final_answer = "Not enough information in the books."
 
         reason_suffix = decision.reason
         if rerank_active:

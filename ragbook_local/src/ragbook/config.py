@@ -34,6 +34,8 @@ class RetrievalConfig:
     claim_check_mode: str = "refuse"
     # path to persisted BM25 index (optional). If not set, defaults to data_dir / 'bm25.pkl'
     bm25_path: str | None = None
+    # language hint for retrieval / claim-check (e.g., 'de' for German, 'en' for English, 'auto')
+    language: str = "auto"
 
 
 @dataclass
@@ -113,6 +115,7 @@ def load_config(path: str | Path) -> AppConfig:
             max_passages=int(ret.get("max_passages", 5)),
             alpha=float(ret.get("alpha", 0.5)),
             claim_check_mode=ret.get("claim_check", {}).get("mode", "refuse") if isinstance(ret.get("claim_check", {}), dict) else "refuse",
+            language=(ret.get("language") if isinstance(ret, dict) else "auto") or "auto",
         ),
         chunking=ChunkingConfig(
             max_chars=int(ch.get("max_chars", 2500)),
