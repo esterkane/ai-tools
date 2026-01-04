@@ -1,0 +1,88 @@
+# ragbook_local — Local RAG for technical PDFs (including scanned PDFs)
+
+This project is a **local** (offline-capable) RAG system:
+- PDFs (including scanned PDFs) are ingested (OCR optional).
+- Text is extracted per page, split into chunks, and indexed in **Qdrant**.
+- The chat UI (Gradio) answers questions **only** based on found passages.
+- When evidence is insufficient, the system suggests **probing questions** instead of hallucinating.
+- The UI displays **full source passages** (highlights/citations).
+
+## Quickstart (recommended)
+### 1) Start Qdrant (Docker)
+```bash
+docker compose up -d qdrant
+```
+
+### 2) Python environment
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -U pip
+pip install -e ".[dev]"
+```
+
+### 3) Configuration
+Copy `config.example.yaml` to `config.yaml` and adjust the paths.
+
+### 4) Ingest (PDFs indexieren)
+```bash
+python -m ragbook.cli ingest ./books --config ./config.yaml
+```
+
+### 5) Start the UI
+```bash
+python -m ragbook.cli ui --config ./config.yaml
+```
+
+## OCR for scanned PDFs
+OCR is optional and requires system dependencies (Tesseract + Ghostscript).
+- Linux (Debian/Ubuntu): `sudo apt-get install tesseract-ocr ghostscript`
+- Then:
+```bash
+python -m ragbook.cli ocr ./books --config ./config.yaml
+```
+This writes OCR PDFs to `data/ocr_out/` by default.
+
+## Hybrid retrieval (BM25 + vector)
+A hybrid retrieval mode combines BM25 (lexical) scores with vector similarity from Qdrant. Configure the fusion weight in `config.yaml` under `retrieval.alpha` (float between 0 and 1). The final fused score is:
+
+    fused = alpha * vector_norm + (1 - alpha) * bm25_norm
+
+BM25 uses `rank-bm25` on the stored chunk `text` payloads and runs locally (offline), while vectors are retrieved from Qdrant.
+
+### Optional re-ranking
+If you enable `retrieval.rerank.enabled = true`, the system will attempt to load a CrossEncoder from `sentence-transformers` (default: `cross-encoder/ms-marco-MiniLM-L-6-v2`) and re-score the top N candidates (`retrieval.rerank.candidates`). If the model is unavailable or prediction fails, the system logs a warning and proceeds without re-ranking. When re-ranking is applied, the `reason` field returned by the `ChatEngine` will include `(re-ranked)`.
+
+### Persisted BM25 index & CLI
+To avoid rebuilding the BM25 index from Qdrant on every startup you can persist it to disk with the new CLI command:
+
+```bash
+python -m ragbook.cli bm25-rebuild --config ./config.yaml --output ./data/bm25.pkl
+```
+
+Notes:
+- `--output` is optional; if omitted the command writes to the configured default `retrieval.bm25_path` (defaults to `data_dir/bm25.pkl`).
+- If the file already exists the command will exit with an error unless you pass `--force` to overwrite.
+- `ChatEngine` will try to load the persisted index from `retrieval.bm25_path` at query time and fall back to building from the Qdrant store if loading fails.
+
+### Claim-check after generation
+A post-generation claim-check step validates which sentences in the LLM answer are directly supported by the retrieved passages. Configure the behavior under `retrieval.claim_check.mode` with either:
+
+- `strip` — remove unsupported sentences from the answer (if everything is removed, respond: "Not enough information in the books.")
+- `refuse` — replace the answer with "Not enough information in the books." when unsupported sentences are detected.
+
+In all cases the UI continues to display the full passages. The claim-check prompt asks the LLM to return a JSON array of unsupported sentences and the system will fall back gracefully if parsing fails.
+## Local LLM
+Default: **llama-cpp-python** (local GGUF model).
+- Place a GGUF model (e.g., `models/your-model.gguf`) and set the path in `config.yaml`.
+
+Alternative (optional): Ollama (if you want to use it), set `llm.backend: ollama`.
+
+## Notes on accuracy / anti-hallucination
+The system enforces:
+- Answer only when retrieval evidence is above the threshold
+- Every answer is justified with full source passages
+- Otherwise: "Not enough information" + probing questions
+
+## License
+Project code: MIT (see `LICENSE`).
