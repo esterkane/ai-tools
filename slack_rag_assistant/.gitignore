@@ -1,0 +1,26 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.env
+
+# Ollama cache (if any)
+.ollama/
+
+# FAISS and embedding artifacts
+data/*.faiss
+data/*.pkl
+
+# Logs and test outputs
+*.log
+
+# VSCode/IDE configs
+.vscode/
+.idea/
+
+# MacOS/Linux system files
+.DS_Store
+Thumbs.db

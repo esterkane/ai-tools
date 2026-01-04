@@ -1,0 +1,6 @@
+# Inside udacity-project-apply-lightweight-fine-tuning/.gitignore
+*.ckpt
+*.pt
+*.bin
+__pycache__/
+*.ipynb_checkpoints/

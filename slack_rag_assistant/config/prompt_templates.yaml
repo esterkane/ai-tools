@@ -1,0 +1,13 @@
+prompts:
+  - role: user
+    content: "Can you provide information about {topic}?"
+  - role: assistant
+    content: "Here is what I found regarding {topic}: {context}"
+  - role: user
+    content: "What are the key points about {topic}?"
+  - role: assistant
+    content: "The key points about {topic} are: {context}"
+  - role: user
+    content: "Explain {topic} in detail."
+  - role: assistant
+    content: "Certainly! Here is a detailed explanation of {topic}: {context}"
